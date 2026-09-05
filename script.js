@@ -663,9 +663,9 @@
   }
 
   function playChime() {
-    if (!state.soundOn) return;
+    if (!state.soundOn || !ambient.ctx) return;
     try {
-      const ctx = playChime._ctx || (playChime._ctx = new (window.AudioContext || window.webkitAudioContext)());
+      const ctx = ambient.ctx;
       const now = ctx.currentTime;
       [523.25, 659.25, 783.99].forEach((freq, i) => {
         const osc = ctx.createOscillator();
@@ -673,13 +673,115 @@
         osc.type = 'sine';
         osc.frequency.value = freq;
         gain.gain.setValueAtTime(0, now + i * 0.12);
-        gain.gain.linearRampToValueAtTime(0.08, now + i * 0.12 + 0.03);
+        gain.gain.linearRampToValueAtTime(0.06, now + i * 0.12 + 0.03);
         gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.6);
         osc.connect(gain).connect(ctx.destination);
         osc.start(now + i * 0.12);
         osc.stop(now + i * 0.12 + 0.7);
       });
     } catch (e) { /* audio not available — fail silently */ }
+  }
+
+  /* ------------------------------------------------------------------
+     14b. AMBIENT OCEAN SOUND — synthesized in-browser, no audio files.
+     Filtered noise (waves) + a slow swelling volume (the "breathing"
+     rhythm of the sea) + one deep soft drone underneath.
+     ------------------------------------------------------------------ */
+  const ambient = {
+    ctx: null,
+    nodes: null,
+    playing: false
+  };
+
+  function ensureAudioContext() {
+    if (!ambient.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ambient.ctx = new AC();
+    }
+    return ambient.ctx;
+  }
+
+  function buildNoiseBuffer(ctx, seconds) {
+    const bufferSize = ctx.sampleRate * seconds;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let lastOut = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      // brown-ish noise: smoother, more wave-like than plain white noise
+      lastOut = (lastOut + 0.02 * white) / 1.02;
+      data[i] = lastOut * 3.2;
+    }
+    return buffer;
+  }
+
+  function startAmbient() {
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    if (ambient.playing) return;
+
+    const noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = buildNoiseBuffer(ctx, 6);
+    noiseSource.loop = true;
+
+    // filter to keep it soft and "watery" rather than hissy
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 900;
+
+    // master gain for the whole ambient bed
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 0;
+
+    // swell gain — mimics waves rolling in and out
+    const swell = ctx.createGain();
+    swell.gain.value = 0.5;
+    const swellLfo = ctx.createOscillator();
+    swellLfo.type = 'sine';
+    swellLfo.frequency.value = 0.09; // one slow swell roughly every 11 seconds
+    const swellDepth = ctx.createGain();
+    swellDepth.gain.value = 0.35;
+    swellLfo.connect(swellDepth).connect(swell.gain);
+
+    // a very low, soft drone underneath for depth
+    const drone = ctx.createOscillator();
+    drone.type = 'sine';
+    drone.frequency.value = 74;
+    const droneGain = ctx.createGain();
+    droneGain.gain.value = 0.035;
+
+    noiseSource.connect(filter).connect(swell).connect(masterGain);
+    drone.connect(droneGain).connect(masterGain);
+    masterGain.connect(ctx.destination);
+
+    noiseSource.start();
+    swellLfo.start();
+    drone.start();
+
+    // fade in gently
+    const now = ctx.currentTime;
+    masterGain.gain.setValueAtTime(0, now);
+    masterGain.gain.linearRampToValueAtTime(0.22, now + 1.6);
+
+    ambient.nodes = { noiseSource, filter, masterGain, swell, swellLfo, swellDepth, drone, droneGain };
+    ambient.playing = true;
+  }
+
+  function stopAmbient() {
+    if (!ambient.playing || !ambient.nodes || !ambient.ctx) return;
+    const { masterGain, noiseSource, swellLfo, drone } = ambient.nodes;
+    const ctx = ambient.ctx;
+    const now = ctx.currentTime;
+    masterGain.gain.cancelScheduledValues(now);
+    masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+    masterGain.gain.linearRampToValueAtTime(0, now + 0.8);
+    setTimeout(() => {
+      try { noiseSource.stop(); swellLfo.stop(); drone.stop(); } catch (e) { /* already stopped */ }
+    }, 850);
+    ambient.playing = false;
+    ambient.nodes = null;
   }
 
   let jarBusy = false;
@@ -891,6 +993,11 @@
     const btn = $('#navSound');
     btn.textContent = state.soundOn ? '🔊' : '🔇';
     btn.setAttribute('aria-pressed', String(state.soundOn));
+    if (state.soundOn) {
+      startAmbient();
+    } else {
+      stopAmbient();
+    }
   }
 
   /* ------------------------------------------------------------------
