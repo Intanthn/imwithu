@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Ocean Quote Jar 🌊</title>
+<meta name="description" content="A tiny ocean-themed quote jar for moments when you need a little encouragement, comfort, or inspiration." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🫙</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Ambient ocean background, present behind every screen -->
+<div class="ocean-bg" aria-hidden="true">
+  <div class="rays"></div>
+  <div class="bubble-field" id="bubbleField"></div>
+  <div class="seafloor"></div>
+  <svg class="wave-layer wave-back" viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,80 C240,140 480,20 720,60 C960,100 1200,140 1440,80 L1440,200 L0,200 Z"></path></svg>
+  <svg class="wave-layer wave-front" viewBox="0 0 1440 200" preserveAspectRatio="none"><path d="M0,100 C240,40 480,150 720,90 C960,40 1200,120 1440,70 L1440,200 L0,200 Z"></path></svg>
+</div>
+
+<!-- Corner nav -->
+<nav class="corner-nav" aria-label="Ocean Quote Jar navigation">
+  <button type="button" class="nav-btn" id="navHome" aria-label="Go home">🌊</button>
+  <button type="button" class="nav-btn" id="navSaved" aria-label="View saved messages">💌</button>
+  <button type="button" class="nav-btn" id="navReset" aria-label="Start over">🔄</button>
+  <button type="button" class="nav-btn" id="navSound" aria-label="Toggle sound" aria-pressed="false">🔇</button>
+</nav>
+
+<main id="app">
+
+  <!-- SCREEN 1: WELCOME -->
+  <section class="screen" id="screen-welcome" data-screen="welcome" aria-labelledby="welcome-heading">
+    <div class="sticker sticker-shell s1" aria-hidden="true">🐚</div>
+    <div class="sticker sticker-jelly s2" aria-hidden="true">🪼</div>
+    <div class="sticker sticker-star s3" aria-hidden="true">⭐</div>
+    <div class="sticker sticker-fish s4" aria-hidden="true">🐠</div>
+    <div class="sticker sticker-coral s5" aria-hidden="true">🪸</div>
+
+    <div class="screen-inner welcome-inner">
+      <p class="eyebrow-hand">a little message from the sea, just for you</p>
+      <h1 id="welcome-heading">Hey, little ocean soul <span class="wave-emoji">🌊</span></h1>
+      <p class="subhead">How's your day going?</p>
+      <p class="support-text">Take a little moment for yourself.<br>You can tell me what's on your mind, or simply dive in.</p>
+      <button type="button" class="btn btn-primary" id="btnDive">Let's dive in <span aria-hidden="true">🌊</span></button>
+
+      <div class="tide-box" id="tideBox">
+        <p class="tide-label">Today's Tide <span aria-hidden="true">🌊</span></p>
+        <p class="tide-message" id="tideMessage">Loading today's tide…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: YOUR DAY -->
+  <section class="screen" id="screen-day" data-screen="day" hidden aria-labelledby="day-heading">
+    <div class="screen-inner">
+      <h2 id="day-heading">Tell me about your day</h2>
+      <p class="subhead-small">You don't have to explain everything.<br>Just write whatever feels right.</p>
+
+      <div class="postcard">
+        <label for="dayText" class="visually-hidden">Tell me about your day</label>
+        <textarea id="dayText" maxlength="500" placeholder="Today felt like…" rows="6"></textarea>
+        <div class="postcard-footer">
+          <span id="charCount">0 / 500</span>
+        </div>
+      </div>
+      <p class="privacy-note">Your words stay here with you <span aria-hidden="true">🐚</span></p>
+
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="btnBackToWelcome">← Back</button>
+        <button type="button" class="btn btn-primary" id="btnToMood">Continue →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: MOOD -->
+  <section class="screen" id="screen-mood" data-screen="mood" hidden aria-labelledby="mood-heading">
+    <div class="screen-inner mood-inner">
+      <h2 id="mood-heading">What are you feeling today?</h2>
+      <p class="subhead-small">Pick the mood that feels closest to you.</p>
+
+      <div class="mood-grid" id="moodGrid" role="listbox" aria-label="Choose your mood"></div>
+
+      <p class="mood-hint" id="moodHint" aria-live="polite">Pick a mood first 🌊</p>
+
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="btnBackToDay">← Back</button>
+        <button type="button" class="btn btn-primary" id="btnToJar" disabled>Put this feeling in the jar →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: THE JAR -->
+  <section class="screen" id="screen-jar" data-screen="jar" hidden aria-labelledby="jar-heading">
+    <div class="screen-inner jar-inner">
+      <h2 id="jar-heading">Your little message from the sea</h2>
+      <p class="subhead-small">I found something that might be meant for you.</p>
+
+      <div class="jar-scene">
+        <div class="jar-decor seaweed s-left" aria-hidden="true"></div>
+        <div class="jar-decor seaweed s-right" aria-hidden="true"></div>
+        <div class="jar-decor starfish" aria-hidden="true">⭐</div>
+        <div class="jar-decor shell-decor" aria-hidden="true">🐚</div>
+
+        <div class="jar-wrap" id="jarWrap">
+          <svg id="jarSvg" viewBox="0 0 240 320" width="240" height="320" role="img" aria-label="A glass jar filled with rolled paper notes, tiny stars and bubbles">
+            <defs>
+              <linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#eafcff" stop-opacity="0.55"/>
+                <stop offset="55%" stop-color="#bfeff2" stop-opacity="0.22"/>
+                <stop offset="100%" stop-color="#8fd9e0" stop-opacity="0.35"/>
+              </linearGradient>
+              <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#69D2D9" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#0B6E8E" stop-opacity="0.45"/>
+              </linearGradient>
+              <clipPath id="jarClip">
+                <path d="M60,60 Q60,40 90,38 L150,38 Q180,40 180,60 L192,270 Q192,300 160,300 L80,300 Q48,300 48,270 Z"/>
+              </clipPath>
+            </defs>
+
+            <!-- lid -->
+            <g id="jarLid" class="jar-lid">
+              <rect x="82" y="14" width="76" height="16" rx="6" fill="#B5834E"/>
+              <rect x="76" y="26" width="88" height="16" rx="8" fill="#C79A65"/>
+            </g>
+
+            <!-- jar body -->
+            <path d="M60,60 Q60,40 90,38 L150,38 Q180,40 180,60 L192,270 Q192,300 160,300 L80,300 Q48,300 48,270 Z"
+                  fill="url(#glassGrad)" stroke="#eafcff" stroke-opacity="0.7" stroke-width="2"/>
+
+            <g clip-path="url(#jarClip)">
+              <rect id="jarWater" x="40" y="150" width="160" height="160" fill="url(#waterGrad)"/>
+              <!-- contents -->
+              <g id="jarContents" fill="none">
+                <rect x="85" y="230" width="26" height="10" rx="4" fill="#F4E3C1" transform="rotate(-8 98 235)"/>
+                <rect x="120" y="245" width="24" height="9" rx="4" fill="#F3C6C8" transform="rotate(10 132 249)"/>
+                <rect x="100" y="200" width="24" height="9" rx="4" fill="#CFC8E8" transform="rotate(-4 112 204)"/>
+                <text x="70" y="270" font-size="14">⭐</text>
+                <text x="150" y="260" font-size="12">🫧</text>
+                <text x="95" y="180" font-size="12">🐚</text>
+                <circle cx="70" cy="190" r="4" fill="#E9FAF7" opacity="0.8"/>
+                <circle cx="150" cy="150" r="3" fill="#E9FAF7" opacity="0.7"/>
+                <circle cx="120" cy="130" r="5" fill="#E9FAF7" opacity="0.6"/>
+              </g>
+              <!-- highlight -->
+              <rect x="60" y="45" width="14" height="230" rx="7" fill="#ffffff" opacity="0.35"/>
+            </g>
+          </svg>
+
+          <div class="jar-bubbles" id="jarBubbles" aria-hidden="true"></div>
+
+          <!-- the paper note that rises out -->
+          <div class="rising-paper" id="risingPaper" aria-hidden="true">📜</div>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary btn-open-jar" id="btnOpenJar">Open the jar <span aria-hidden="true">✨</span></button>
+      <button type="button" class="btn btn-ghost" id="btnBackToMood">← Change mood</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 5: QUOTE REVEAL -->
+  <section class="screen" id="screen-quote" data-screen="quote" hidden aria-labelledby="quote-heading">
+    <div class="screen-inner quote-inner">
+      <h2 id="quote-heading" class="visually-hidden">Your message from the sea</h2>
+      <p class="quote-context" id="quoteContext">🌊 A message for your day</p>
+
+      <div class="quote-card" id="quoteCard">
+        <div class="quote-card-shell" aria-hidden="true">🐚</div>
+        <blockquote class="quote-text" id="quoteText">…</blockquote>
+        <p class="quote-author" id="quoteAuthor">— A little note from the sea</p>
+        <button type="button" class="btn-save" id="btnSave" aria-pressed="false">
+          <span id="saveIcon" aria-hidden="true">♡</span> <span id="saveLabel">Save this message</span>
+        </button>
+      </div>
+
+      <p class="day-echo" id="dayEcho" hidden></p>
+
+      <div class="btn-row btn-row-wrap">
+        <button type="button" class="btn btn-primary" id="btnAnother">✨ Another message</button>
+        <button type="button" class="btn btn-ghost" id="btnChangeMood">🐚 Change mood</button>
+        <button type="button" class="btn btn-ghost" id="btnStartOver">🌊 Start over</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 6: SAVED MESSAGES -->
+  <section class="screen" id="screen-saved" data-screen="saved" hidden aria-labelledby="saved-heading">
+    <div class="screen-inner">
+      <h2 id="saved-heading">Your little collection</h2>
+      <p class="subhead-small">Messages you've tucked away to keep.</p>
+      <div class="saved-list" id="savedList"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="btnCloseSaved">← Back</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p><strong>Ocean Quote Jar</strong> — a tiny digital jar of words for days when you need them.</p>
+  <p>Your journal entry stays on your device and is never sent anywhere.</p>
+</footer>
+
+<div class="sr-live" aria-live="polite" id="srLive"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
